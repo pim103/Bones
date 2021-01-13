@@ -10,9 +10,15 @@ public class ControllerEditor : Editor
         DrawDefaultInspector();
 
         Controller controller = (Controller) target;
-        if (GUILayout.Button("Générer un nuage de point"))
+
+        if (GUILayout.Button("Générer les bones"))
         {
-            controller.GeneratePointCloud();
+            controller.GenerateBones();
+        }
+
+        if (GUILayout.Button("Some Test"))
+        {
+            controller.SomeTest();
         }
 
         if (GUILayout.Button("Clear la scene"))
