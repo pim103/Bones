@@ -10,8 +10,19 @@ public class AutoRigging
 {
     private List<Vector3> GetPointListForPart(Transform meshPart)
     {
-        SkinnedMeshRenderer smr = meshPart.GetComponent<SkinnedMeshRenderer>();
-        List<Vector3> pointsInMesh = smr.sharedMesh.vertices.ToList();
+        List<Vector3> pointsInMesh = new List<Vector3>();
+
+        SkinnedMeshRenderer skinnedMeshRenderer;
+        MeshFilter meshFilter;
+        
+        if ((skinnedMeshRenderer = meshPart.GetComponent<SkinnedMeshRenderer>()) != null)
+        {
+            pointsInMesh = skinnedMeshRenderer.sharedMesh.vertices.ToList();
+        }
+        else if ((meshFilter = meshPart.GetComponent<MeshFilter>()) != null)
+        {
+            pointsInMesh = meshFilter.sharedMesh.vertices.ToList();
+        }
 
         return pointsInMesh;
     }
@@ -116,58 +127,48 @@ public class AutoRigging
         }
     }
     
-    public void ComputeAutorigging(GameObject go, bool displayBarycenter, bool displayExtrem, bool displayProjectedPoints)
+    public void ComputeAutorigging(Transform childPart, bool displayBarycenter, bool displayExtrem, bool displayProjectedPoints)
     {
-        for (int i = 0; i < go.transform.childCount; ++i)
+        // Get point from mesh
+        List<Vector3> pointsInMesh = GetPointListForPart(childPart);
+        
+        // Calcul Barycenter and display
+        Vector3 barycenter = MathRigging.CalculBarycenter(pointsInMesh);
+
+        if (displayBarycenter)
         {
-            Transform childPart = go.transform.GetChild(i);
+            Controller.AddPoint(barycenter, Vector3.one * 10, "Barycenter");
+        }
 
-            if (childPart.name == "Root")
-            {
-                continue;
-            }
+        // Center point
+        CenterPoints(pointsInMesh, barycenter);
 
-            // Get point from mesh
-            List<Vector3> pointsInMesh = GetPointListForPart(childPart);
-            
-            // Calcul Barycenter and display
-            Vector3 barycenter = MathRigging.CalculBarycenter(pointsInMesh);
+        // Matrice de covariance
+        Matrix4x4 matrix = CalculCovarianceMatrix(pointsInMesh);
 
-            if (displayBarycenter)
-            {
-                Controller.AddPoint(barycenter, Vector3.one * 10, "Barycenter");
-            }
+        // Valeur propre et vecteur associé
+        Vector3 vectorPropre = GetVectorPropre(matrix);
 
-            // Center point
-            CenterPoints(pointsInMesh, barycenter);
+        // Projected Points
+        List<Vector3> projectedPoints = CalculProjectedPoints(pointsInMesh, vectorPropre);
 
-            // Matrice de covariance
-            Matrix4x4 matrix = CalculCovarianceMatrix(pointsInMesh);
+        // Extreme Points
+        List<Vector3> extremPoints = CalculExtremePoints(projectedPoints, vectorPropre);
+        ReplacePoints(extremPoints, barycenter);
 
-            // Valeur propre et vecteur associé
-            Vector3 vectorPropre = GetVectorPropre(matrix);
+        if (displayExtrem)
+        {
+            Controller.DisplayPointsList(extremPoints, "extremPoint");
+        }
 
-            // Projected Points
-            List<Vector3> projectedPoints = CalculProjectedPoints(pointsInMesh, vectorPropre);
-
-            // Extreme Points
-            List<Vector3> extremPoints = CalculExtremePoints(projectedPoints, vectorPropre);
-            ReplacePoints(extremPoints, barycenter);
-
-            if (displayExtrem)
-            {
-                Controller.DisplayPointsList(extremPoints, "extremPoint");
-            }
-
-            if (displayProjectedPoints)
-            {
-                ReplacePoints(projectedPoints, barycenter);
-                Controller.DisplayPointsList(projectedPoints, "projectedPoint");
-            }
-            else
-            {
-                Controller.DrawOneEdge(extremPoints[0], extremPoints[1]);
-            }
+        if (displayProjectedPoints)
+        {
+            ReplacePoints(projectedPoints, barycenter);
+            Controller.DisplayPointsList(projectedPoints, "projectedPoint");
+        }
+        else
+        {
+            Controller.DrawOneEdge(extremPoints[0], extremPoints[1]);
         }
     }
 }

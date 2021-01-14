@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using Model;
 using UnityEngine;
@@ -108,7 +108,10 @@ public class Controller : MonoBehaviour
 
     public void GenerateBones()
     {
-        autoRigging.ComputeAutorigging(humanGo, displayBarycenter, displayExtrem, displayProjectedPoints);
+        for (int i = 0; i < humanGo.transform.childCount; ++i)
+        {
+            autoRigging.ComputeAutorigging(humanGo.transform.GetChild(i), displayBarycenter, displayExtrem, displayProjectedPoints);
+        }
     }
  
     public void ClearScene()
