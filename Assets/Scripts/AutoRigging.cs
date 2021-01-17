@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Model;
 using UnityEngine;
 using Utils;
 using Matrix4x4 = UnityEngine.Matrix4x4;
@@ -8,7 +9,7 @@ using Vector4 = UnityEngine.Vector4;
 
 public class AutoRigging
 {
-    private List<Vector3> GetPointListForPart(Transform meshPart)
+    private static List<Vector3> GetPointListForPart(Transform meshPart)
     {
         List<Vector3> pointsInMesh = new List<Vector3>();
 
@@ -27,7 +28,7 @@ public class AutoRigging
         return pointsInMesh;
     }
 
-    private void CenterPoints(List<Vector3> points, Vector3 barycenter)
+    private static void CenterPoints(List<Vector3> points, Vector3 barycenter)
     {
         for (int i = 0; i < points.Count; ++i)
         {
@@ -35,7 +36,7 @@ public class AutoRigging
         }
     }
 
-    private Matrix4x4 CalculCovarianceMatrix(List<Vector3> points)
+    private static Matrix4x4 CalculCovarianceMatrix(List<Vector3> points)
     {
         List<float> allX = new List<float>();
         List<float> allY = new List<float>();
@@ -57,14 +58,14 @@ public class AutoRigging
         return matrix;
     }
 
-    private float GetMaxValue(Vector4 v)
+    private static float GetMaxValue(Vector4 v)
     {
         float[] vectorToList = { Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z) };
 
         return Mathf.Max(vectorToList);
     }
 
-    private Vector3 GetVectorPropre(Matrix4x4 matrix)
+    private static Vector3 GetVectorPropre(Matrix4x4 matrix)
     {
         Vector4 initialVector = new Vector4(0, 0, 1, 1);
         
@@ -82,7 +83,7 @@ public class AutoRigging
         return vectorPropre;
     }
 
-    private List<Vector3> CalculProjectedPoints(List<Vector3> points, Vector3 vectorPropre)
+    private static List<Vector3> CalculProjectedPoints(List<Vector3> points, Vector3 vectorPropre)
     {
         List<Vector3> projectedPoints = new List<Vector3>();
 
@@ -94,7 +95,7 @@ public class AutoRigging
         return projectedPoints;
     }
 
-    private List<Vector3> CalculExtremePoints(List<Vector3> projectedPoints, Vector3 vectorPropre)
+    private static List<Vector3> CalculExtremePoints(List<Vector3> projectedPoints, Vector3 vectorPropre)
     {
         List<Vector3> extremPoints = new List<Vector3>();
         Vector3 minPoint = projectedPoints[0];
@@ -102,12 +103,12 @@ public class AutoRigging
 
         foreach (Vector3 projectedPoint in projectedPoints)
         {
-            float alpha = Vector3.Dot(projectedPoint, vectorPropre);
+            float scalarProduct = Vector3.Dot(projectedPoint, vectorPropre);
 
-            if (alpha < 0 && minPoint.magnitude < projectedPoint.magnitude)
+            if (scalarProduct < 0 && minPoint.magnitude < projectedPoint.magnitude)
             {
                 minPoint = projectedPoint;
-            } else if (alpha > 0 && maxPoint.magnitude < projectedPoint.magnitude)
+            } else if (scalarProduct > 0 && maxPoint.magnitude < projectedPoint.magnitude)
             {
                 maxPoint = projectedPoint;
             }
@@ -119,16 +120,18 @@ public class AutoRigging
         return extremPoints;
     }
 
-    private void ReplacePoints(List<Vector3> points, Vector3 barycenter)
+    private static void ReplacePoints(List<Vector3> points, Vector3 barycenter, Vector3 offset)
     {
         for (int i = 0; i < points.Count; ++i)
         {
-            points[i] = points[i] + barycenter;
+            points[i] = points[i] + barycenter + offset;
         }
     }
     
-    public void ComputeAutorigging(Transform childPart, bool displayBarycenter, bool displayExtrem, bool displayProjectedPoints)
+    public static Bone CreateBoneForPart(Transform childPart, bool displayBarycenter, bool displayExtrem)
     {
+        Vector3 offset = childPart.position;
+        
         // Get point from mesh
         List<Vector3> pointsInMesh = GetPointListForPart(childPart);
         
@@ -154,21 +157,44 @@ public class AutoRigging
 
         // Extreme Points
         List<Vector3> extremPoints = CalculExtremePoints(projectedPoints, vectorPropre);
-        ReplacePoints(extremPoints, barycenter);
+        ReplacePoints(extremPoints, barycenter, offset);
 
         if (displayExtrem)
         {
             Controller.DisplayPointsList(extremPoints, "extremPoint");
         }
 
-        if (displayProjectedPoints)
+        Point p1 = new Point
         {
-            ReplacePoints(projectedPoints, barycenter);
-            Controller.DisplayPointsList(projectedPoints, "projectedPoint");
-        }
-        else
+            position = extremPoints[0]
+        };
+
+        Point p2 = new Point
         {
-            Controller.DrawOneEdge(extremPoints[0], extremPoints[1]);
+            position = extremPoints[1]
+        };
+
+        return new Bone(p1, p2, childPart);
+    }
+
+    public static RiggedCharacter CreateRigging(GameObject humanGo, bool displayBarycenter, bool displayExtrem)
+    {
+        RiggedCharacter riggedCharacter = new RiggedCharacter();
+        
+        for (int i = 0; i < humanGo.transform.childCount; ++i)
+        {
+            Transform childPart = humanGo.transform.GetChild(i);
+
+            if (childPart.name.ToLower().Contains("ignore"))
+            {
+                continue;
+            }
+
+            riggedCharacter.AddBone(CreateBoneForPart(childPart, displayBarycenter, displayExtrem));
         }
+
+        riggedCharacter.JoinsRelatedBones();
+        
+        return riggedCharacter;
     }
 }

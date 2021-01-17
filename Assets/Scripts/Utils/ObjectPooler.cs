@@ -67,9 +67,13 @@ namespace Utils
 
 		private void ClearChild()
 		{
-			foreach (GameObject go in pooledObjects)
+			int safeLoopIteration = 1000;
+			int loopIteration = 0;
+			
+			while (transform.childCount > 0 && loopIteration < safeLoopIteration)
 			{
-				DestroyImmediate(go);
+				DestroyImmediate(transform.GetChild(0).gameObject);
+				loopIteration++;
 			}
 		}
 

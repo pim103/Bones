@@ -52,7 +52,7 @@ namespace Utils
                 Debug.LogWarning("Covariance : Data 1 size != Data 2 size");
                 return 0.0f;
             }
-            
+
             float moyData1 = GetMoy(data1);
             float moyData2 = GetMoy(data2);
 

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using Model;
 using UnityEngine;
@@ -8,15 +8,11 @@ using Utils;
 [ExecuteInEditMode]
 public class Controller : MonoBehaviour
 {
-    [SerializeField] private int nbPoints = 100;
-
     [SerializeField] private GameObject humanGo;
     [SerializeField] private bool displayBarycenter;
     [SerializeField] private bool displayExtrem;
-    [SerializeField] private bool displayProjectedPoints;
 
-    private AutoRigging autoRigging;
-    private static List<Point> currentPointsInScene;
+    [SerializeField] private GameObject someTest;
     private static List<GameObject> goInScene;
 
     private static Controller instance;
@@ -31,37 +27,9 @@ public class Controller : MonoBehaviour
     
     void Init()
     {
-        currentPointsInScene = new List<Point>();
         goInScene = new List<GameObject>();
 
         instance = this;
-        autoRigging = new AutoRigging();
-    }
-
-    public void GeneratePointCloud()
-    {
-        Debug.Log(nbPoints);
-        for (int i = 0; i < nbPoints; ++i)
-        {
-            GameObject ob = ObjectPooler.SharedInstance.GetPooledObject(0);
-
-            Vector3 pos = new Vector3();
-            pos.x = Random.Range(-50, 50);
-            pos.y = Random.Range(-50, 50);
-            pos.z = Random.Range(-50, 50);
-
-            if (currentPointsInScene.Exists(p => p.position == pos))
-            {
-                --i;
-                continue;
-            }
-
-            currentPointsInScene.Add(new Point{ position = pos });
-
-            ob.transform.position = pos;
-            ob.SetActive(true);
-            goInScene.Add(ob);
-        }
     }
 
     public static void DisplayPointsList(List<Vector3> points, string nameOfObject = "Point")
@@ -84,7 +52,7 @@ public class Controller : MonoBehaviour
         goInScene.Add(ob);
     }
     
-    public static void DrawOneEdge(Vector3 pos1, Vector3 pos2)
+    public static GameObject DrawOneEdge(Vector3 pos1, Vector3 pos2)
     {
         GameObject seg = ObjectPooler.SharedInstance.GetPooledObject(1);
 
@@ -104,14 +72,23 @@ public class Controller : MonoBehaviour
 
         seg.SetActive(true);
         goInScene.Add(seg);
+
+        return seg;
+    }
+
+    public static void DeleteEdge(GameObject go)
+    {
+        if (goInScene.Contains(go))
+        {
+            goInScene.Remove(go);
+        }
+
+        go.SetActive(false);
     }
 
     public void GenerateBones()
     {
-        for (int i = 0; i < humanGo.transform.childCount; ++i)
-        {
-            autoRigging.ComputeAutorigging(humanGo.transform.GetChild(i), displayBarycenter, displayExtrem, displayProjectedPoints);
-        }
+        RiggedCharacter riggedCharacter = AutoRigging.CreateRigging(humanGo, displayBarycenter, displayExtrem);
     }
  
     public void ClearScene()
@@ -122,15 +99,11 @@ public class Controller : MonoBehaviour
             goInScene.RemoveAt(0);
         }
         
-        currentPointsInScene.Clear();
         goInScene.Clear();
     }
 
     public void SomeTest()
     {
-        List<float> data1 = new List<float>{ 3, 7, 28, 14, 35};
-        List<float> data2 = new List<float>{ -1, 3, 15, 7, 77};
-        
-        Debug.Log(MathRigging.Covariance(data1, data2));
+        Debug.Log("Nothing to test sry :/");
     }
 }
