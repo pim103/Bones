@@ -161,7 +161,7 @@ public class AutoRigging
 
         if (displayExtrem)
         {
-            Controller.DisplayPointsList(extremPoints, "extremPoint");
+            Controller.DisplayPointsList(extremPoints, "extremPoint-" + childPart.name);
         }
 
         Point p1 = new Point

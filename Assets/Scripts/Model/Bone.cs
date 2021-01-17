@@ -77,12 +77,10 @@ namespace Model
             {
                 if (p2 == extrem1.position)
                 {
-//                    extrem2.position = p1;
                     extrem2.MovePoint(p1);
                 }
                 else if (p2 == extrem2.position)
                 {
-//                    extrem1.position = p1;
                     extrem1.MovePoint(p1);
                 }
             }
@@ -91,12 +89,10 @@ namespace Model
             {
                 if (p1 == extrem1.position)
                 {
-//                    extrem2.position = p2;
                     extrem2.MovePoint(p2);
                 }
                 else if (p1 == extrem2.position)
                 {
-//                    extrem1.position = p2;
                     extrem1.MovePoint(p2);
                 }
             }
